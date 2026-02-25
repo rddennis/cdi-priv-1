@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>See It My Way (University Prototype)</title>
+  <title>See It Their Way (University Prototype)</title>
 
   <style>
     :root{
@@ -245,6 +245,43 @@
       color: var(--muted);
       font-size: 12px;
     }
+
+    /* Loading state */
+.loading {
+  margin-top: 12px;
+  display: none;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(29, 78, 216, 0.25);
+  background: linear-gradient(90deg, rgba(219, 234, 254, 0.55), rgba(209, 250, 229, 0.55));
+  color: #0b1220;
+  font-size: 13px;
+}
+
+.loading.show {
+  display: inline-flex;
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid rgba(5, 150, 105, 0.25);
+  border-top-color: var(--green-600);
+  border-right-color: var(--blue-600);
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
   </style>
 </head>
 
@@ -252,7 +289,7 @@
   <div class="page">
     <div class="header">
       <div class="brand">
-        <h1 class="title">See It My Way</h1>
+        <h1 class="title">See It Their Way</h1>
         <p class="subtitle">
           University-only prototype. Describe a disagreement from campus life, class, or a student setting.
           The tool asks a few context questions, then reconstructs plausible perspectives and gently surfaces bias.
@@ -277,6 +314,11 @@
           </div>
 
           <div id="alert" class="alert"></div>
+
+          <div id="loading" class="loading">
+  <div class="spinner"></div>
+  <div id="loadingText">Working…</div>
+</div>
 
           <div class="pill">Tip: Mention the setting (class, dorm, club, TA/prof) so it stays in scope.</div>
           <div class="footer">This is a prototype designed to expand perspective awareness. It does not decide who is right.</div>
@@ -322,6 +364,21 @@
     const questionsDiv = document.getElementById("questions");
     const outputWrap = document.getElementById("outputWrap");
     const outputDiv = document.getElementById("output");
+    const loading = document.getElementById("loading");
+const loadingText = document.getElementById("loadingText");
+const getQuestionsBtn = document.getElementById("getQuestions");
+const reconstructBtn = document.getElementById("reconstructBtn");
+const resetBtn = document.getElementById("reset");
+
+function setLoading(isLoading, message="Working…") {
+  loadingText.textContent = message;
+  loading.classList.toggle("show", isLoading);
+
+  // Disable buttons while waiting
+  getQuestionsBtn.disabled = isLoading;
+  reconstructBtn.disabled = isLoading;
+  resetBtn.disabled = isLoading;
+}
 
     let lastQuestions = [];
 
@@ -344,130 +401,143 @@
       qEmpty.style.display = "block";
       outputWrap.style.display = "none";
       outputDiv.innerHTML = "";
+      setLoading(false);
       clearAlert();
     };
 
-    document.getElementById("getQuestions").onclick = async () => {
-      clearAlert();
-      outputWrap.style.display = "none";
-      outputDiv.innerHTML = "";
+document.getElementById("getQuestions").onclick = async () => {
+  clearAlert();
+  outputWrap.style.display = "none";
+  outputDiv.innerHTML = "";
 
-      const disagreement = document.getElementById("disagreement").value.trim();
-      if(!disagreement){
-        showAlert("Please describe a university-centered situation first.", true);
-        return;
+  const disagreement = document.getElementById("disagreement").value.trim();
+  if(!disagreement){
+    showAlert("Please describe a university-centered situation first.", true);
+    return;
+  }
+
+  setLoading(true, "Generating context questions…");
+
+  try {
+    const res = await fetch("/api/questions", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({disagreement})
+    });
+
+    const data = await res.json();
+
+    if(!res.ok){
+      if(data.error === "out_of_scope"){
+        showAlert(`${data.message} ${data.how_to_fix ? " " + data.how_to_fix : ""}`, true);
+      } else {
+        showAlert(data.error || "Something went wrong.", true);
       }
+      return;
+    }
 
-      const res = await fetch("/api/questions", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({disagreement})
-      });
+    lastQuestions = data.questions || [];
+    if(!lastQuestions.length){
+      showAlert("No questions were generated. Try adding more context (class, dorm, club, professor/TA).", true);
+      return;
+    }
 
-      const data = await res.json();
+    questionsDiv.innerHTML = lastQuestions.map(q => `
+      <div class="mini-card">
+        <label>${q}</label>
+        <input data-q="${q}" placeholder="Your answer..." />
+      </div>
+    `).join("");
 
-      if(!res.ok){
-        if(data.error === "out_of_scope"){
-          showAlert(`${data.message} ${data.how_to_fix ? " " + data.how_to_fix : ""}`, true);
-        } else {
-          showAlert(data.error || "Something went wrong.", true);
-        }
-        return;
+    qWrap.style.display = "block";
+    qEmpty.style.display = "none";
+    showAlert("Nice. Answer what you can, then reconstruct the other perspective.", false);
+  } finally {
+    setLoading(false);
+  }
+};
+
+document.getElementById("reconstructBtn").onclick = async () => {
+  clearAlert();
+
+  const disagreement = document.getElementById("disagreement").value.trim();
+  const inputs = questionsDiv.querySelectorAll("input");
+  const answers = {};
+  inputs.forEach(inp => {
+    const q = inp.getAttribute("data-q");
+    const a = inp.value.trim();
+    if(a) answers[q] = a;
+  });
+
+  if(Object.keys(answers).length === 0){
+    showAlert("Please answer at least one question so the reconstruction has something to work with.", true);
+    return;
+  }
+
+  setLoading(true, "Reconstructing perspectives…");
+
+  try {
+    const res = await fetch("/api/reconstruct", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({disagreement, answers})
+    });
+
+    const data = await res.json();
+
+    if(!res.ok){
+      if(data.error === "out_of_scope"){
+        showAlert(`${data.message} ${data.how_to_fix ? " " + data.how_to_fix : ""}`, true);
+      } else {
+        showAlert(data.error || "Something went wrong.", true);
       }
+      return;
+    }
 
-      lastQuestions = data.questions || [];
-      if(!lastQuestions.length){
-        showAlert("No questions were generated. Try adding more context (class, dorm, club, professor/TA).", true);
-        return;
-      }
+    const hypothesesHtml = (data.hypotheses || []).map(h => `
+      <div class="mini-card">
+        <p class="mini-title">${h.title}</p>
+        <p>${h.reasoning}</p>
+        <p class="muted"><strong>Signals used:</strong> ${(h.signals_used || []).join(", ")}</p>
+      </div>
+    `).join("");
 
-      questionsDiv.innerHTML = lastQuestions.map(q => `
-        <div class="mini-card">
-          <label>${q}</label>
-          <input data-q="${q}" placeholder="Your answer..." />
-        </div>
-      `).join("");
+    const biasHtml = (data.bias_checks || []).map(x => `<li>${x}</li>`).join("");
+    const uncertHtml = (data.uncertainty_notes || []).map(x => `<li>${x}</li>`).join("");
 
-      qWrap.style.display = "block";
-      qEmpty.style.display = "none";
-      showAlert("Nice. Answer what you can, then reconstruct the other perspective.", false);
-    };
+    outputDiv.innerHTML = `
+      <div class="mini-card">
+        <p class="mini-title">Hypotheses</p>
+        <div class="results">${hypothesesHtml}</div>
+      </div>
 
-    document.getElementById("reconstructBtn").onclick = async () => {
-      clearAlert();
+      <div class="mini-card">
+        <p class="mini-title">Bias checks</p>
+        <ul>${biasHtml}</ul>
+      </div>
 
-      const disagreement = document.getElementById("disagreement").value.trim();
-      const inputs = questionsDiv.querySelectorAll("input");
-      const answers = {};
-      inputs.forEach(inp => {
-        const q = inp.getAttribute("data-q");
-        const a = inp.value.trim();
-        if(a) answers[q] = a;
-      });
+      <div class="mini-card">
+        <p class="mini-title">Uncertainty notes</p>
+        <ul>${uncertHtml}</ul>
+      </div>
 
-      if(Object.keys(answers).length === 0){
-        showAlert("Please answer at least one question so the reconstruction has something to work with.", true);
-        return;
-      }
+      <div class="mini-card">
+        <p class="mini-title">User correction</p>
+        <p>${data.user_correction_prompt}</p>
+      </div>
 
-      const res = await fetch("/api/reconstruct", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({disagreement, answers})
-      });
+      <div class="mini-card">
+        <p class="mini-title">One reflection prompt</p>
+        <p>${data.one_reflection_prompt}</p>
+      </div>
+    `;
 
-      const data = await res.json();
-
-      if(!res.ok){
-        if(data.error === "out_of_scope"){
-          showAlert(`${data.message} ${data.how_to_fix ? " " + data.how_to_fix : ""}`, true);
-        } else {
-          showAlert(data.error || "Something went wrong.", true);
-        }
-        return;
-      }
-
-      const hypothesesHtml = (data.hypotheses || []).map(h => `
-        <div class="mini-card">
-          <p class="mini-title">${h.title}</p>
-          <p>${h.reasoning}</p>
-          <p class="muted"><strong>Signals used:</strong> ${(h.signals_used || []).join(", ")}</p>
-        </div>
-      `).join("");
-
-      const biasHtml = (data.bias_checks || []).map(x => `<li>${x}</li>`).join("");
-      const uncertHtml = (data.uncertainty_notes || []).map(x => `<li>${x}</li>`).join("");
-
-      outputDiv.innerHTML = `
-        <div class="mini-card">
-          <p class="mini-title">Hypotheses</p>
-          <div class="results">${hypothesesHtml}</div>
-        </div>
-
-        <div class="mini-card">
-          <p class="mini-title">Bias checks</p>
-          <ul>${biasHtml}</ul>
-        </div>
-
-        <div class="mini-card">
-          <p class="mini-title">Uncertainty notes</p>
-          <ul>${uncertHtml}</ul>
-        </div>
-
-        <div class="mini-card">
-          <p class="mini-title">User correction</p>
-          <p>${data.user_correction_prompt}</p>
-        </div>
-
-        <div class="mini-card">
-          <p class="mini-title">One reflection prompt</p>
-          <p>${data.one_reflection_prompt}</p>
-        </div>
-      `;
-
-      outputWrap.style.display = "block";
-      showAlert("Okay, this is the “tryable moment.” Now you can tweak the prompt and rerun if you want.", false);
-    };
+    outputWrap.style.display = "block";
+    showAlert("Okay, this is the “tryable moment.” Now you can tweak the prompt and rerun if you want.", false);
+  } finally {
+    setLoading(false);
+  }
+};
   </script>
 </body>
 </html>
