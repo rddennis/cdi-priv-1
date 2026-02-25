@@ -1,0 +1,473 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>See It My Way (University Prototype)</title>
+
+  <style>
+    :root{
+      --bg: #ffffff;
+      --text: #0f172a;
+      --muted: #475569;
+
+      --blue-700: #1d4ed8;
+      --blue-600: #2563eb;
+      --blue-100: #dbeafe;
+
+      --green-700: #047857;
+      --green-600: #059669;
+      --green-100: #d1fae5;
+
+      --border: #e2e8f0;
+      --shadow: 0 10px 30px rgba(2, 6, 23, 0.08);
+      --radius: 16px;
+    }
+
+    * { box-sizing: border-box; }
+    body{
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      color: var(--text);
+      background: var(--bg);
+    }
+
+    .page{
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 36px 18px 60px;
+    }
+
+    .header{
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+
+    .brand{
+      display:flex;
+      flex-direction:column;
+      gap: 6px;
+    }
+
+    .title{
+      font-size: 34px;
+      line-height: 1.1;
+      margin: 0;
+      letter-spacing: -0.02em;
+    }
+
+    .subtitle{
+      margin: 0;
+      color: var(--muted);
+      font-size: 15px;
+      max-width: 740px;
+    }
+
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      gap: 8px;
+      padding: 10px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: linear-gradient(90deg, var(--blue-100), var(--green-100));
+      color: #0b1220;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 18px;
+      margin-top: 18px;
+    }
+
+    @media (max-width: 900px){
+      .grid{ grid-template-columns: 1fr; }
+    }
+
+    .card{
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      background: #fff;
+      overflow: hidden;
+    }
+
+    .card-header{
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.08), rgba(5, 150, 105, 0.08));
+    }
+
+    .card-title{
+      margin: 0;
+      font-size: 16px;
+      letter-spacing: -0.01em;
+    }
+
+    .card-body{
+      padding: 18px;
+    }
+
+    label{
+      display:block;
+      font-weight: 600;
+      font-size: 13px;
+      margin-bottom: 8px;
+      color: #0b1220;
+    }
+
+    textarea, input{
+      width: 100%;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      padding: 12px 12px;
+      font-size: 14px;
+      outline: none;
+      background: #fff;
+      transition: border-color 120ms ease, box-shadow 120ms ease;
+    }
+    textarea:focus, input:focus{
+      border-color: rgba(37, 99, 235, 0.65);
+      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.15);
+    }
+
+    .actions{
+      display:flex;
+      flex-wrap:wrap;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    button{
+      border: none;
+      border-radius: 999px;
+      padding: 11px 14px;
+      cursor: pointer;
+      font-weight: 650;
+      font-size: 14px;
+      transition: transform 80ms ease, opacity 120ms ease;
+    }
+    button:active{ transform: translateY(1px); }
+
+    .btn-primary{
+      color: #fff;
+      background: linear-gradient(90deg, var(--blue-600), var(--green-600));
+    }
+    .btn-secondary{
+      color: #0b1220;
+      background: #f8fafc;
+      border: 1px solid var(--border);
+    }
+
+    .note{
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      padding: 8px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: #f8fafc;
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 10px;
+    }
+
+    .alert{
+      border-radius: 14px;
+      padding: 12px 12px;
+      border: 1px solid rgba(29, 78, 216, 0.25);
+      background: rgba(219, 234, 254, 0.55);
+      color: #0b1220;
+      margin-top: 12px;
+      display:none;
+    }
+
+    .alert.error{
+      border-color: rgba(220, 38, 38, 0.25);
+      background: rgba(254, 226, 226, 0.65);
+    }
+
+    .q-list{
+      display:flex;
+      flex-direction:column;
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    .section{
+      margin-top: 16px;
+    }
+
+    .results{
+      display:flex;
+      flex-direction:column;
+      gap: 12px;
+    }
+
+    .mini-card{
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+      background: #fff;
+    }
+
+    .mini-title{
+      margin: 0 0 8px 0;
+      font-weight: 750;
+      letter-spacing: -0.01em;
+    }
+
+    .muted{
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    ul{
+      margin: 8px 0 0 18px;
+      padding: 0;
+      color: #0b1220;
+    }
+
+    .footer{
+      margin-top: 18px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="page">
+    <div class="header">
+      <div class="brand">
+        <h1 class="title">See It My Way</h1>
+        <p class="subtitle">
+          University-only prototype. Describe a disagreement from campus life, class, or a student setting.
+          The tool asks a few context questions, then reconstructs plausible perspectives and gently surfaces bias.
+        </p>
+      </div>
+      <div class="badge">University scope only • Hypotheses, not judgments</div>
+    </div>
+
+    <div class="grid">
+      <!-- Left: Input -->
+      <div class="card">
+        <div class="card-header">
+          <p class="card-title">1) Describe the university situation</p>
+        </div>
+        <div class="card-body">
+          <label for="disagreement">What happened? Keep it brief.</label>
+          <textarea id="disagreement" rows="8" placeholder="Example: My group project partner thinks we should split the work evenly, but I think roles should match strengths..."></textarea>
+
+          <div class="actions">
+            <button id="getQuestions" class="btn-primary">Get context questions</button>
+            <button id="reset" class="btn-secondary" type="button">Reset</button>
+          </div>
+
+          <div id="alert" class="alert"></div>
+
+          <div class="pill">Tip: Mention the setting (class, dorm, club, TA/prof) so it stays in scope.</div>
+          <div class="footer">This is a prototype designed to expand perspective awareness. It does not decide who is right.</div>
+        </div>
+      </div>
+
+      <!-- Right: Questions + Action -->
+      <div class="card">
+        <div class="card-header">
+          <p class="card-title">2) Answer a few questions</p>
+        </div>
+        <div class="card-body">
+          <div id="questionsWrap" style="display:none;">
+            <div id="questions" class="q-list"></div>
+            <div class="actions">
+              <button id="reconstructBtn" class="btn-primary">Reconstruct perspective</button>
+            </div>
+            <div class="note">Answer what you can. If you are unsure, say that. Uncertainty is allowed here.</div>
+          </div>
+
+          <div id="questionsEmpty" class="note">
+            Once you submit a university-centered situation, you’ll get 3–6 context questions here.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Results -->
+    <div class="card section" id="outputWrap" style="display:none;">
+      <div class="card-header">
+        <p class="card-title">3) Perspective reconstruction</p>
+      </div>
+      <div class="card-body">
+        <div id="output" class="results"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const alertBox = document.getElementById("alert");
+    const qWrap = document.getElementById("questionsWrap");
+    const qEmpty = document.getElementById("questionsEmpty");
+    const questionsDiv = document.getElementById("questions");
+    const outputWrap = document.getElementById("outputWrap");
+    const outputDiv = document.getElementById("output");
+
+    let lastQuestions = [];
+
+    function showAlert(message, isError=false){
+      alertBox.textContent = message;
+      alertBox.classList.toggle("error", isError);
+      alertBox.style.display = "block";
+    }
+    function clearAlert(){
+      alertBox.style.display = "none";
+      alertBox.textContent = "";
+      alertBox.classList.remove("error");
+    }
+
+    document.getElementById("reset").onclick = () => {
+      document.getElementById("disagreement").value = "";
+      lastQuestions = [];
+      questionsDiv.innerHTML = "";
+      qWrap.style.display = "none";
+      qEmpty.style.display = "block";
+      outputWrap.style.display = "none";
+      outputDiv.innerHTML = "";
+      clearAlert();
+    };
+
+    document.getElementById("getQuestions").onclick = async () => {
+      clearAlert();
+      outputWrap.style.display = "none";
+      outputDiv.innerHTML = "";
+
+      const disagreement = document.getElementById("disagreement").value.trim();
+      if(!disagreement){
+        showAlert("Please describe a university-centered situation first.", true);
+        return;
+      }
+
+      const res = await fetch("/api/questions", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({disagreement})
+      });
+
+      const data = await res.json();
+
+      if(!res.ok){
+        if(data.error === "out_of_scope"){
+          showAlert(`${data.message} ${data.how_to_fix ? " " + data.how_to_fix : ""}`, true);
+        } else {
+          showAlert(data.error || "Something went wrong.", true);
+        }
+        return;
+      }
+
+      lastQuestions = data.questions || [];
+      if(!lastQuestions.length){
+        showAlert("No questions were generated. Try adding more context (class, dorm, club, professor/TA).", true);
+        return;
+      }
+
+      questionsDiv.innerHTML = lastQuestions.map(q => `
+        <div class="mini-card">
+          <label>${q}</label>
+          <input data-q="${q}" placeholder="Your answer..." />
+        </div>
+      `).join("");
+
+      qWrap.style.display = "block";
+      qEmpty.style.display = "none";
+      showAlert("Nice. Answer what you can, then reconstruct the other perspective.", false);
+    };
+
+    document.getElementById("reconstructBtn").onclick = async () => {
+      clearAlert();
+
+      const disagreement = document.getElementById("disagreement").value.trim();
+      const inputs = questionsDiv.querySelectorAll("input");
+      const answers = {};
+      inputs.forEach(inp => {
+        const q = inp.getAttribute("data-q");
+        const a = inp.value.trim();
+        if(a) answers[q] = a;
+      });
+
+      if(Object.keys(answers).length === 0){
+        showAlert("Please answer at least one question so the reconstruction has something to work with.", true);
+        return;
+      }
+
+      const res = await fetch("/api/reconstruct", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({disagreement, answers})
+      });
+
+      const data = await res.json();
+
+      if(!res.ok){
+        if(data.error === "out_of_scope"){
+          showAlert(`${data.message} ${data.how_to_fix ? " " + data.how_to_fix : ""}`, true);
+        } else {
+          showAlert(data.error || "Something went wrong.", true);
+        }
+        return;
+      }
+
+      const hypothesesHtml = (data.hypotheses || []).map(h => `
+        <div class="mini-card">
+          <p class="mini-title">${h.title}</p>
+          <p>${h.reasoning}</p>
+          <p class="muted"><strong>Signals used:</strong> ${(h.signals_used || []).join(", ")}</p>
+        </div>
+      `).join("");
+
+      const biasHtml = (data.bias_checks || []).map(x => `<li>${x}</li>`).join("");
+      const uncertHtml = (data.uncertainty_notes || []).map(x => `<li>${x}</li>`).join("");
+
+      outputDiv.innerHTML = `
+        <div class="mini-card">
+          <p class="mini-title">Hypotheses</p>
+          <div class="results">${hypothesesHtml}</div>
+        </div>
+
+        <div class="mini-card">
+          <p class="mini-title">Bias checks</p>
+          <ul>${biasHtml}</ul>
+        </div>
+
+        <div class="mini-card">
+          <p class="mini-title">Uncertainty notes</p>
+          <ul>${uncertHtml}</ul>
+        </div>
+
+        <div class="mini-card">
+          <p class="mini-title">User correction</p>
+          <p>${data.user_correction_prompt}</p>
+        </div>
+
+        <div class="mini-card">
+          <p class="mini-title">One reflection prompt</p>
+          <p>${data.one_reflection_prompt}</p>
+        </div>
+      `;
+
+      outputWrap.style.display = "block";
+      showAlert("Okay, this is the “tryable moment.” Now you can tweak the prompt and rerun if you want.", false);
+    };
+  </script>
+</body>
+</html>
